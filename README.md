@@ -4,7 +4,7 @@ pip install elasticsearch==x.x.x pandas
 ```
 <hr >
 
-It's good to create a python virtual environment before installing dependencies.  
+It's good to create a **python virtual environment** before installing dependencies.  
 
 First, create a directory to hold all the virtual environments in one place.  
 ```bash
@@ -24,4 +24,37 @@ source ~/venvs/es-export-env/bin/activate
 Finally, run the script
 ```bash
 python3 export.py
-``` 
+```
+
+<hr>
+
+**Alternatively**, the `manage_venvs.sh` shell file from this project can be used to create and manage virtual environments.
+
+Firstly, copy the `manage_venvs.sh` file to the $HOME (~) directory.  
+
+Then make the file executable
+```bash
+chmod +x manage_venvs.sh
+```
+
+After that, add the alias to `.bashrc`
+```bash
+alias venvwizard="$HOME/manage_venvs.sh"
+```
+
+Finally, run the file like the following
+```bash
+# create
+./manage_venvs.sh create es-export-env
+# delete
+./manage_venvs.sh delete es-export-env
+# list all
+./manage_venvs.sh list
+```
+
+Or, by using the alias
+```bash
+venvwizard create myenv
+venvwizard delete myenv
+venvwizard list
+```
