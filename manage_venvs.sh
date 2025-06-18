@@ -52,18 +52,25 @@ activate_venv() {
   fi
 }
 
+list_packages() {
+  python3 -c 'help("modules")'
+}
+
 case "$1" in
+  list)
+    list_venvs
+    ;;
   create)
     create_venv "$2"
+    ;;
+  activate)
+    activate_venv "$2"
     ;;
   delete)
     delete_venv "$2"
     ;;
-  list)
-    list_venvs
-    ;;
-  activate)
-    activate_venv "$2"
+  packages)
+    list_packages
     ;;
   *)
     echo "Example usage"
@@ -71,5 +78,6 @@ case "$1" in
     echo "venvwizard create <env-name>"
     echo "venvwizard activate <env-name>"
     echo "venvwizard delete <env-name>"
+    echo "venvwizard packages"
     ;;
 esac
