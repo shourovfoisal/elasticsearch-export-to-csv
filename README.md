@@ -39,22 +39,25 @@ chmod +x manage_venvs.sh
 
 After that, add the alias to `.bashrc`
 ```bash
-alias venvwizard="$HOME/manage_venvs.sh"
+alias venvwizard="source $HOME/manage_venvs.sh"
 ```
 
 Finally, run the file like the following
 ```bash
-# create
-./manage_venvs.sh create es-export-env
-# delete
-./manage_venvs.sh delete es-export-env
 # list all
 ./manage_venvs.sh list
+# create
+./manage_venvs.sh create env_name
+# activate
+./manage_venvs.sh activate env_name
+# delete
+./manage_venvs.sh delete env_name
 ```
 
 Or, by using the alias
 ```bash
-venvwizard create myenv
-venvwizard delete myenv
 venvwizard list
+venvwizard create env_name
+venvwizard activate env_name
+venvwizard delete env_name
 ```

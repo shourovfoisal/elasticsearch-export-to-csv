@@ -39,6 +39,19 @@ delete_venv() {
   fi
 }
 
+activate_venv() {
+  if [ -z "$1" ]; then
+    echo "VENV name is required"
+    exit 1
+  fi
+  VENV_NAME=$1
+  if [ -d "$VENV_DIR/$VENV_NAME" ]; then
+    source ~/venvs/$VENV_NAME/bin/activate
+  else
+    echo "$VENV_NAME does not exist."
+  fi
+}
+
 case "$1" in
   create)
     create_venv "$2"
@@ -49,10 +62,14 @@ case "$1" in
   list)
     list_venvs
     ;;
+  activate)
+    activate_venv "$2"
+    ;;
   *)
     echo "Example usage"
-    echo "./manage_venvs.sh create <env-name>"
-    echo "Or by using alias"
+    echo "venvwizard list"
     echo "venvwizard create <env-name>"
+    echo "venvwizard activate <env-name>"
+    echo "venvwizard delete <env-name>"
     ;;
 esac
