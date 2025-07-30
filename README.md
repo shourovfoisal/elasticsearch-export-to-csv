@@ -61,3 +61,6 @@ venvwizard create env_name
 venvwizard activate env_name
 venvwizard delete env_name
 ```
+
+To change the python interpreter in `Visual Studio Code`:  
+<kbd>CTRL</kbd> + <kbd>SHIFT</kbd> + <kbd>P</kbd>
