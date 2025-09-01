@@ -1,4 +1,5 @@
-output
-jsonoutput
+output_csv/
+output_json/
 .vscode
 __pycache__
+venv/

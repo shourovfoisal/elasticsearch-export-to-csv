@@ -1,10 +1,40 @@
 from elasticsearch.helpers import scan
-from config import es_client, index_name, columns, query
 import pandas as pd
 import os
+from config import (
+    es_client,
+    index_name,
+    columns,
+    query,
+    CSV_OUTPUT_DIR,
+    JSON_OUTPUT_DIR,
+    SHOULD_OUTPUT_CSV,
+    SHOULD_OUTPUT_JSON
+)
+
+csv_export_path=""
+json_export_path=""
 
 def main():
-    results = scan(
+    results = read_the_index()
+    
+    create_output_directories()
+    
+    flags = {"is_first_batch": True}
+    output_chunk_size = 5000
+    buffer = []
+    
+    for doc in results:
+        buffer.append(doc["_source"])
+        
+        # Write in chunks
+        if len(buffer) >= output_chunk_size:
+            produce_output(buffer, flags)
+    
+    if(buffer): produce_output(buffer, flags)    # Write remaining
+
+def read_the_index():
+    return scan(
         client=es_client,
         query=query,
         index=index_name,
@@ -13,35 +43,40 @@ def main():
         preserve_order=True,
     )
 
-    docs = []
-    for i, doc in enumerate(results):
-        docs.append(doc['_source'])
+def create_output_directories():
+    global csv_export_path, json_export_path
+    if SHOULD_OUTPUT_CSV:
+        os.makedirs(CSV_OUTPUT_DIR, exist_ok=True)
+        csv_export_path = os.path.join(CSV_OUTPUT_DIR, "export.csv")
+    if SHOULD_OUTPUT_JSON:
+        os.makedirs(JSON_OUTPUT_DIR, exist_ok=True)
+        json_export_path = os.path.join(JSON_OUTPUT_DIR, "export.json")
 
-    if docs:
-        column_order = list(docs[0].keys())
 
-        # Sometimes, the first element's keys, which is:
-        # column_order = list(docs[0].keys())
-        # might not contain all the columns
-        # as we can't expect every document to have data for every column
-        if len(columns) > 0:
-            dataframe = pd.DataFrame(docs)[columns] # we know the columns to expect
-        else:
-            dataframe = pd.DataFrame(docs)[column_order]    # we need to extract the columns from the first element
-    else:
-        dataframe = pd.DataFrame(docs)
-
-    output_to_csv(dataframe)
-    output_to_json(dataframe)
-
-def output_to_csv(dataframe):
-    os.makedirs("output", exist_ok=True)
-    csv_export_path = os.path.join("output", "export.csv")
-    dataframe.to_csv(csv_export_path, index=False)
-
-def output_to_json(dataframe):
-    os.makedirs("jsonoutput", exist_ok=True)
-    json_export_path = os.path.join("jsonoutput", "export.json")
-    dataframe.to_json(json_export_path, index=False)
+# This method ensures that
+# The DataFrame has exactly the columns you want
+# In the order you want
+# If a column name from the columns list doesn't exist
+# It still gets included in the output, with all values set to NaN
+def rearrange_columns(df):
+    return df.reindex(columns) if columns else df
     
-main()
+
+def write_to_file(df, is_first_batch, should_output_csv = True, should_output_json = True):
+    if is_first_batch:
+        if should_output_csv: df.to_csv(csv_export_path, index=False, mode="w")
+        if should_output_json: df.to_json(json_export_path, orient="records", lines=True, mode="w")
+    else:
+        if should_output_csv: df.to_csv(csv_export_path, index=False, mode="a", header=False)
+        if should_output_json: df.to_json(json_export_path, orient="records", lines=True, mode="a")
+
+
+def produce_output(buffer, flags):
+    df = rearrange_columns(pd.DataFrame(buffer))
+    write_to_file(df, flags["is_first_batch"], SHOULD_OUTPUT_CSV, SHOULD_OUTPUT_JSON)
+    buffer.clear()
+    flags["is_first_batch"] = False
+
+
+if __name__ == "__main__":
+    main()
