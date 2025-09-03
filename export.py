@@ -59,7 +59,7 @@ def create_output_directories():
 # If a column name from the columns list doesn't exist
 # It still gets included in the output, with all values set to NaN
 def rearrange_columns(df):
-    return df.reindex(columns) if columns else df
+    return df.reindex(columns=columns) if columns else df
     
 
 def write_to_file(df, is_first_batch, should_output_csv = True, should_output_json = True):
