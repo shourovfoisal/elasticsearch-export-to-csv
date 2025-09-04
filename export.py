@@ -4,7 +4,7 @@ import os
 from config import (
     es_client,
     index_name,
-    columns,
+    expected_columns,
     query,
     CSV_OUTPUT_DIR,
     JSON_OUTPUT_DIR,
@@ -16,22 +16,26 @@ csv_export_path=""
 json_export_path=""
 
 def main():
-    results = read_the_index()
-    
     create_output_directories()
     
     flags = {"is_first_batch": True}
     output_chunk_size = 5000
     buffer = []
     
-    for doc in results:
-        buffer.append(doc["_source"])
+    all_columns = set()
+    for doc in read_the_index():
+        all_columns.update(doc["_source"].keys())
+    all_columns = list(all_columns)
+    
+    for doc in read_the_index():
+        source = flatten_arrays(doc["_source"])
+        buffer.append(source)
         
         # Write in chunks
         if len(buffer) >= output_chunk_size:
-            produce_output(buffer, flags)
+            produce_output(buffer=buffer, flags=flags, all_columns=all_columns)
     
-    if(buffer): produce_output(buffer, flags)    # Write remaining
+    if buffer: produce_output(buffer=buffer, flags=flags, all_columns=all_columns)    # Write remaining
 
 def read_the_index():
     return scan(
@@ -53,13 +57,26 @@ def create_output_directories():
         json_export_path = os.path.join(JSON_OUTPUT_DIR, "export.json")
 
 
+# This method takes each object, and converts its array fields from
+# Python array representation "[-0.48734865, 0.18669638, 0.13392454, -0.17082427, 0.25744757]" to
+# CSV friendly array representation "-0.48734865, 0.18669638, 0.13392454, -0.17082427, 0.25744757"
+def flatten_arrays(obj):
+    for k, v in obj.items():
+        if isinstance(v, list):
+            obj[k] = ", ".join(map(str, v))
+    return obj
+
 # This method ensures that
 # The DataFrame has exactly the columns you want
 # In the order you want
 # If a column name from the columns list doesn't exist
 # It still gets included in the output, with all values set to NaN
-def rearrange_columns(df):
-    return df.reindex(columns=columns) if columns else df
+def rearrange_columns(df, all_columns):
+    return (
+        df.reindex(columns=expected_columns)
+            if len(expected_columns) > 0
+            else df.reindex(columns=all_columns)
+    )
     
 
 def write_to_file(df, is_first_batch, should_output_csv = True, should_output_json = True):
@@ -71,8 +88,8 @@ def write_to_file(df, is_first_batch, should_output_csv = True, should_output_js
         if should_output_json: df.to_json(json_export_path, orient="records", lines=True, mode="a")
 
 
-def produce_output(buffer, flags):
-    df = rearrange_columns(pd.DataFrame(buffer))
+def produce_output(buffer, flags, all_columns):
+    df = rearrange_columns(df=pd.DataFrame(buffer), all_columns=all_columns)
     write_to_file(df, flags["is_first_batch"], SHOULD_OUTPUT_CSV, SHOULD_OUTPUT_JSON)
     buffer.clear()
     flags["is_first_batch"] = False

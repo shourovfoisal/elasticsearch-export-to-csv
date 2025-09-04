@@ -8,10 +8,20 @@ SHOULD_OUTPUT_JSON = True
 
 es_client = Elasticsearch("http://localhost:9200")
 index_name = "products-v1-1"
-columns = []  # Choose columns. Leave empty array to choose all the columns.
+expected_columns = []  # Choose columns. Leave empty array to choose all the columns.
 query = {
-    "_source": columns,
+    "_source": expected_columns,
     "query": {
         "match_all": {}
     }
 }
+
+# query = {
+#   "query": {
+#     "term": {
+#       "id": {
+#         "value": "40"
+#       }
+#     }
+#   }
+# }
